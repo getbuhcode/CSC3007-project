@@ -22,7 +22,7 @@
       max-width: 600px;
     }
 
-    #map {
+    #map, #map2 {
       width: 1000px;
       height: 600px;
       margin-left: auto;
@@ -68,7 +68,15 @@
         </div>
       </div>
 
-      <div id="map" class="mt-5"></div>
+      <div id="map_header" class="d-flex justify-content-around">
+        <h1>United States</h1>
+        <h1>European Union</h1>
+      </div>
+
+      <div class="d-flex">
+        <div id="map" class="mt-5"></div>
+        <div id="map2" class="mt-5 ms-5"></div>
+      </div>
     </main>
   </div>
 
@@ -81,6 +89,7 @@
   <script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
 
   <script type="text/javascript" src="GeoData/us-states.js"></script>
+  <script type="text/javascript" src="GeoData/Europe_geo_data.js"></script>
 
   <!-- Main Script -->
   <script type="text/javascript">
@@ -125,9 +134,59 @@
 
     // Map tiles
     let tiles = new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+    
+    bothMap()
 
-    // Map
-    let map = new L.Map('map', { center: [41.0395, -99.1728], zoom: 4 }).addLayer(tiles)
+    function bothMap() {
+      console.log("SVG Map");
+      /**
+       * Create the leaflet map for US
+      */ 
+      // Map tiles for US
+      // For Lat and Long: https://www.latlong.net/
+      let tiles_US = new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+      // Map for  US
+      let map_US = new L.Map('map', { 
+        center: [50.0395, -99.1728], 
+        zoom: 3,
+        minZoom: 2.4,
+        maxZoom: 5,
+        maxBounds: L.latLngBounds(
+          L.latLng(17.480625, -64.563013),
+          L.latLng(56.277523, -196.739525),
+
+        ), // Set a max bound
+        // setMaxBounds: L.latLngBounds(
+        //   L.latLng(71.457957, -157.515355), 
+        //   L.latLng(15.707665, -155.550756),
+        //   L.latLng(48.951366, -68.608748),
+        //   L.latLng(17.480625, -64.563013)
+        //   )
+      }).addLayer(tiles_US)
+      // Add USA state data
+      L.geoJson(statesData).addTo(map_US);
+
+      /**
+       * Create the leaflet map for EU
+      */ 
+      // Map tiles for EU
+      let tiles_EU = new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+      // Map for  EU
+      let map_EU = new L.Map('map2', { 
+        center: [50.7043, 22.5906], 
+        zoom: 3,
+        minZoom: 2.4,
+        maxZoom: 5,
+        maxBounds: L.latLngBounds(
+          L.latLng(50.491061, -13.137016),
+          L.latLng(66.443100, 180.843980)
+        ),
+      }).addLayer(tiles_EU)
+      // Add USA state data
+      L.geoJson(euCountries).addTo(map_EU);
+
+    }; // End of function bothMap()
+
 
     // Add USA state data
     geojson = L.geoJson(statesData, {style: RegionOutline, onEachFeature: onEachFeature}).addTo(map);
@@ -213,7 +272,8 @@
 
     info.addTo(map);
 
-  })
+  });
+  
   </script>
 </body>
 
