@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="" />
+  <title>US/EU Religion Distribution</title>
+
+  <!-- CSS CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.8.0/leaflet.css" />
+
+  <!-- Custom CSS -->
+  <style>
+    .container {
+      max-width: 1200px;
+    }
+
+    .header {
+      max-width: 600px;
+    }
+
+    #map {
+      width: 1000px;
+      height: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container py-3">
+    <header>
+      <div class="header p-3 pb-md-4 mx-auto text-center">
+        <h1 class="display-4 fw-normal">Religion Distribution</h1>
+        <p class="fs-5 text-muted">Find out which country or states has the highest religious population!</p>
+      </div>
+    </header>
+
+    <main>
+      <div class="d-flex justify-content-center">
+        <div class="btn-group btn-group-lg" role="group">
+          <input type="radio" class="btn-check" name="btnradio" id="btnradio1" value="USA" autocomplete="off" checked />
+          <label class="btn btn-secondary" for="btnradio1">USA</label>
+
+          <input type="radio" class="btn-check" name="btnradio" id="btnradio2" value="EU" autocomplete="off" />
+          <label class="btn btn-secondary" for="btnradio2">EU</label>
+
+          <input type="radio" class="btn-check" name="btnradio" id="btnradio3" value="Both" autocomplete="off" />
+          <label class="btn btn-secondary" for="btnradio3">USA & EU</label>
+        </div>
+      </div>
+
+      <div id="map" class="mt-5"></div>
+    </main>
+  </div>
+
+  <!-- Required JS files -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.min.js"
+    integrity="sha384-kjU+l4N0Yf4ZOJErLsIcvOU2qSb74wXpOhqTvwVx3OElZRweTnQ6d31fXEoRD1Jy"
+    crossorigin="anonymous"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.8.0/leaflet.js"></script>
+  <script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
+
+  <script type="text/javascript" src="GeoData/us-states.js"></script>
+
+  <!-- Main Script -->
+  <script type="text/javascript">
+    
+    svgMap()
+
+    function svgMap() {
+      console.log("SVG Map");
+
+      // Get Europe and US Data
+      Promise.all([d3.json("GeoData/Europe_geoData_SVG.json"), d3.json("GeoData/US_State_SVG.json")]).then(data => {
+        width = 1000;
+        height = 600;
+
+        // Check the data
+        console.log("Europe_geo_data: ", data[0]);
+        console.log("us-states: ", data[1]);
+
+        // Select the base div container & append a new SVG
+        let mainDiv = d3.select("#map")
+        mainDiv.append("svg")
+        .attr("id", "svgMap");
+
+        // D3 Projection For Europe Map
+        // var EU_projection = d3.geoMercator()
+        // // .translate([width/2, height/2])    // translate to center of screen
+        // // .scale([20000])          // scale things down so see entire US
+        // // .center([0, 0])
+        // .center([ 13, 53 ]) 
+        // .scale([ 100 ])
+        // .fitExtent([[0, 0], [width, height]], data[0])
+        // .fitSize([width, height], data[0]);
+        
+        // // Define path generator
+        // var EU_geopath = d3.geoPath() // path generator that will convert GeoJSON to SVG paths
+        // .projection(EU_projection);
+
+        // // Create the map layout
+        // let svgMap = 
+        // d3.select("#svgMap")
+        // .attr("viewBox", "0 0 " + width + " " + height);
+        
+        // svgMap.append("g")
+        // .attr("id", "districts") // for CSS
+        // // Plot out the map topology
+        // .selectAll("path")
+        // .data(data[0].features)
+        // .enter()
+        // .append("path")
+        // // Draw out the section of district
+        // .attr("d", EU_geopath)
+
+        // D3 Projection For US Map
+        var US_projection = d3.geoMercator()
+        // .translate([width/2, height/2])    // translate to center of screen
+        .scale([600])          // scale things down so see entire US
+        // .center([0, 0]) 
+        // .scale([ 100 ])
+        .fitExtent([[0, 0], [width, height]], data[1])
+        .fitSize([width, height], data[1]);
+        
+        // Define path generator
+        var US_geopath = d3.geoPath() // path generator that will convert GeoJSON to SVG paths
+        .projection(US_projection);
+
+        // Create the map layout
+        let svgMap = 
+        d3.select("#svgMap")
+        .attr("viewBox", "0 0 " + width + " " + height);
+        
+        svgMap.append("g")
+        .attr("id", "districts") // for CSS
+        // Plot out the map topology
+        .selectAll("path")
+        .data(data[1].features)
+        .enter()
+        .append("path")
+        // Draw out the section of district
+        .attr("d", US_geopath)
+
+      });
+
+    }; // End of function svgMap()
+    
+  </script>
+</body>
+
+</html>
