@@ -87,10 +87,8 @@
 
   Promise.all([d3.csv("ReligionData/US_Religion_Data.csv"), d3.csv("ReligionData/US_Population_Data.csv")]).then(data => {
 
-  console.log(data[0]);
-  console.log(data[1]);
-
-  })
+    console.log(data[0]['Very important']); // US_Religion_Data 
+    console.log(data[1]); // US_Population_Data
 
     // define geojson variable
     var geojson;
@@ -108,21 +106,21 @@
     // Get the colour for the map based on the religion data %
     function getColor(religionPercentage) {
       return religionPercentage <= 10 ? '#fff5eb':
-             religionPercentage > 10 && religionPercentage <= 20  ? '#fff5eb':
-             religionPercentage > 20 && religionPercentage <= 30  ? '#fff5eb':
-             religionPercentage > 30 && religionPercentage <= 40  ? '#fff5eb':
-             religionPercentage > 40 && religionPercentage <= 50  ? '#fff5eb':
-             religionPercentage > 50 && religionPercentage <= 60  ? '#fff5eb':
-             religionPercentage > 60 && religionPercentage <= 70  ? '#fff5eb':
-             religionPercentage > 70 && religionPercentage <= 80  ? '#fff5eb':
-             religionPercentage > 80 && religionPercentage <= 90  ? '#fff5eb':
+            religionPercentage > 10 && religionPercentage <= 20  ? '#fff5eb':
+            religionPercentage > 20 && religionPercentage <= 30  ? '#fff5eb':
+            religionPercentage > 30 && religionPercentage <= 40  ? '#fff5eb':
+            religionPercentage > 40 && religionPercentage <= 50  ? '#fff5eb':
+            religionPercentage > 50 && religionPercentage <= 60  ? '#fff5eb':
+            religionPercentage > 60 && religionPercentage <= 70  ? '#fff5eb':
+            religionPercentage > 70 && religionPercentage <= 80  ? '#fff5eb':
+            religionPercentage > 80 && religionPercentage <= 90  ? '#fff5eb':
                                                                     '#654321'; // dark brown
     }
 
-    // Styling for the border of each country
+    // Styling for the area of each state
     function RegionOutline(feature) {
       return {
-          fillColor: getColor(20), // change the 20 to the religionPrecentage
+          fillColor: getColor(data[0]['Very important']), // change the 20 to the religionPrecentage
           weight: 2,
           opacity: 1,
           color: 'white',
@@ -185,6 +183,7 @@
 
     info.addTo(map);
 
+  })
   </script>
 </body>
 
