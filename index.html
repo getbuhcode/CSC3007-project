@@ -85,6 +85,13 @@
   <!-- Main Script -->
   <script type="text/javascript">
 
+  Promise.all([d3.csv("ReligionData/US_Religion_Data.csv"), d3.csv("ReligionData/US_Population_Data.csv")]).then(data => {
+
+  console.log(data[0]);
+  console.log(data[1]);
+
+  })
+
     // define geojson variable
     var geojson;
     var info = L.control();
