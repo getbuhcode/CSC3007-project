@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="" />
-  <title>US/EU Religion Distribution</title>
+  <title>USA/EU Religion Distribution</title>
 
   <!-- CSS CDN -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -22,7 +22,8 @@
       max-width: 600px;
     }
 
-    #map, #map2 {
+    #map,
+    #map2 {
       width: 1000px;
       height: 600px;
       margin-left: auto;
@@ -33,14 +34,27 @@
       padding: 6px 8px;
       font: 14px/16px Arial, Helvetica, sans-serif;
       background: white;
-      background: rgba(255,255,255,0.8);
-      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      background: rgba(255, 255, 255, 0.8);
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
       border-radius: 5px;
     }
-    
+
     .info h4 {
       margin: 0 0 5px;
       color: #777;
+    }
+
+    .legend {
+      line-height: 18px;
+      color: #555;
+    }
+
+    .legend i {
+      width: 18px;
+      height: 18px;
+      float: left;
+      margin-right: 8px;
+      opacity: 0.7;
     }
   </style>
 </head>
@@ -68,7 +82,7 @@
         </div>
       </div>
 
-      <div id="map_header" class="d-flex justify-content-around">
+      <div id="map_header" class="d-flex justify-content-around mt-2">
         <h1>United States</h1>
         <h1>European Union</h1>
       </div>
@@ -94,186 +108,377 @@
   <!-- Main Script -->
   <script type="text/javascript">
 
-  Promise.all([d3.csv("ReligionData/US_Religion_Data.csv"), d3.csv("ReligionData/US_Population_Data.csv")]).then(data => {
+    Promise.all([d3.csv("ReligionData/US_Religion_Data.csv"), d3.csv("ReligionData/US_Population_Data.csv"), d3.csv("ReligionData/EU_Religion_Data.csv"), d3.csv("ReligionData/EU_Population_Data.csv")]).then(data => {
 
-    console.log(data[0]); // US_Religion_Data 
-    console.log(data[1]); // US_Population_Data
-
-    console.log(statesData.features.length)
-    console.log(data[0][0])
-
-    // add the very_important percentage into statesData
-    for (i in data[0]){
-        var stateName = data[0][i]['State']
-        for (i in statesData.features){
-          var name = statesData.features[i]['properties'].name
-          if (name == stateName){
-            var veryImpt = data[0][i].Very_Important  
-            veryImpt = parseInt(veryImpt)
-            statesData.features[i]['properties']['Very_Important'] = veryImpt 
+      // Add religion & pop for US states
+      statesData.features.forEach(function (feature) {
+        data[0].forEach(function (state) {
+          if (feature.properties.name == state.State) {
+            feature.properties.religion = state.Very_Important
           }
-        }
-    }
+        })
 
-    // add the population into statesData
-    for (i in data[1]){
-        var stateName = data[1][i]['State']
-        for (i in statesData.features){
-          var name = statesData.features[i]['properties'].name
-          if (name == stateName){
-            var population = data[1][i].Population  
-            statesData.features[i]['properties']['Population'] = population 
+        data[1].forEach(function (state) {
+          if (feature.properties.name == state.State) {
+            feature.properties.population = state.Population
           }
+        })
+      })
+
+      // Add religion & pop for EU countries
+      euCountries.features.forEach(function (feature) {
+        data[2].forEach(function (country) {
+          if (feature.properties.name == country.Country) {
+            feature.properties.religion = country.Religion
+          }
+        })
+
+        data[3].forEach(function (country) {
+          if (feature.properties.name == country.Country) {
+            feature.properties.population = country.Population
+          }
+        })
+      })
+
+      // Hide divs for Both
+      $("#map_header").attr("class", "d-flex justify-content-around mt-2 d-none");
+      $("#map2").attr("class", "mt-5 ms-5 d-none");
+
+      // Define global variables
+      var geojson;
+      var geojson_2;
+      var map;
+      var map_2;
+      var info = L.control();
+      var info_2 = L.control();
+      var legend = L.control({ position: 'bottomright' });
+      var legend_2 = L.control({ position: 'bottomright' });
+      var map_2_active = false; // Used to active map_2 features
+
+      // Init USA map
+      // Map tiles
+      let tiles = new L.TileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}');
+
+      // Map
+      map = new L.Map('map', { center: [41.0395, -99.1728], zoom: 4 }).addLayer(tiles)
+
+      // Add USA state data
+      geojson = L.geoJson(statesData, { style: RegionOutline, onEachFeature: onEachFeature }).addTo(map);
+
+      // Add an event listener to the radio buttons
+      d3.selectAll('input').on('change', function () {
+        changeMap(this.value)
+      })
+
+      // Remove old map and add in new map
+      function changeMap(buttonValue) {
+        // Remove prev map
+        map.off();
+        map.remove();
+
+        if (map_2_active == true) {
+          map_2.off();
+          map_2.remove();
+          map_2_active = false
+
+          // Hide divs for Both
+          $("#map_header").attr("class", "d-flex justify-content-around mt-2 d-none");
+          $("#map2").attr("class", "mt-5 ms-5 d-none");
         }
-    }
 
-    console.log(statesData)
-    // define geojson variable
-    var geojson;
-    var info = L.control();
+        if (buttonValue == "USA") {
+          /// Add USA country map and data
 
-    // Map tiles
-    let tiles = new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
-    
-    bothMap()
+          map = new L.Map('map', { center: [41.0395, -99.1728], zoom: 4 }).addLayer(tiles)
+          geojson = L.geoJson(statesData, { style: RegionOutline, onEachFeature: onEachFeature }).addTo(map);
+        } else if (buttonValue == "EU") {
+          // Add EU country map and data
 
-    function bothMap() {
-      console.log("SVG Map");
-      /**
-       * Create the leaflet map for US
-      */ 
-      // Map tiles for US
-      // For Lat and Long: https://www.latlong.net/
-      let tiles_US = new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
-      // Map for  US
-      let map_US = new L.Map('map', { 
-        center: [50.0395, -99.1728], 
-        zoom: 3,
-        minZoom: 2.4,
-        maxZoom: 5,
-        maxBounds: L.latLngBounds(
-          L.latLng(17.480625, -64.563013),
-          L.latLng(56.277523, -196.739525),
+          map = new L.Map('map', { center: [50.7043, 22.5906], zoom: 4 }).addLayer(tiles)
+          geojson = L.geoJson(euCountries, { style: RegionOutline, onEachFeature: onEachFeature }).addTo(map);
+        } else if (buttonValue == "Both") {
+          bothMap()
+        }
 
-        ), // Set a max bound
-        // setMaxBounds: L.latLngBounds(
-        //   L.latLng(71.457957, -157.515355), 
-        //   L.latLng(15.707665, -155.550756),
-        //   L.latLng(48.951366, -68.608748),
-        //   L.latLng(17.480625, -64.563013)
-        //   )
-      }).addLayer(tiles_US)
-      // Add USA state data
-      L.geoJson(statesData).addTo(map_US);
+        // Add legend and infobox for the new maps
+        legend.addTo(map);
+        info.addTo(map);
 
-      /**
-       * Create the leaflet map for EU
-      */ 
-      // Map tiles for EU
-      let tiles_EU = new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
-      // Map for  EU
-      let map_EU = new L.Map('map2', { 
-        center: [50.7043, 22.5906], 
-        zoom: 3,
-        minZoom: 2.4,
-        maxZoom: 5,
-        maxBounds: L.latLngBounds(
-          L.latLng(50.491061, -13.137016),
-          L.latLng(66.443100, 180.843980)
-        ),
-      }).addLayer(tiles_EU)
-      // Add USA state data
-      L.geoJson(euCountries).addTo(map_EU);
+        if (map_2_active == true) {
+          legend_2.addTo(map_2);
+          info_2.addTo(map_2);
+        }
+      }
 
-    }; // End of function bothMap()
+      // Set view to 2 maps
+      function bothMap() {
+        // Show divs and activate map_2
+        $("#map_header").removeClass("d-none");
+        $("#map2").removeClass("d-none");
+        map_2_active = true
+        
+        /**
+         * Create the leaflet map for US
+        */
+        // Map tiles for US
+        // For Lat and Long: https://www.latlong.net/
+        let tiles_US = new L.TileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}');
+        // Map for  US
+        map = new L.Map('map', {
+          center: [50.0395, -99.1728],
+          zoom: 3,
+          minZoom: 2.4,
+          maxZoom: 5,
+          maxBounds: L.latLngBounds(
+            L.latLng(17.480625, -64.563013),
+            L.latLng(56.277523, -196.739525),
 
+          ),
+        }).addLayer(tiles_US)
+        // Add USA state data
+        geojson = L.geoJson(statesData, { style: RegionOutline, onEachFeature: onEachFeature }).addTo(map);
 
-    // Add USA state data
-    geojson = L.geoJson(statesData, {style: RegionOutline, onEachFeature: onEachFeature}).addTo(map);
+        /**
+         * Create the leaflet map for EU
+        */
+        // Map tiles for EU
+        let tiles_EU = new L.TileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}');
+        // Map for  EU
+        map_2 = new L.Map('map2', {
+          center: [50.7043, 22.5906],
+          zoom: 3,
+          minZoom: 2.4,
+          maxZoom: 5,
+          maxBounds: L.latLngBounds(
+            L.latLng(50.491061, -13.137016),
+            L.latLng(66.443100, 180.843980)
+          ),
+        }).addLayer(tiles_EU)
+        // Add USA state data
+        geojson_2 = L.geoJson(euCountries, { style: RegionOutline, onEachFeature: onEachFeature }).addTo(map_2);
 
-    // Get the colour for the map based on the religion data %
-    function getColor(religionPercentage) {
-      return religionPercentage <= 10 ? '#fff5eb':
-            religionPercentage > 10 && religionPercentage <= 20  ? '#fee6ce':
-            religionPercentage > 20 && religionPercentage <= 30  ? '#fdd0a2':
-            religionPercentage > 30 && religionPercentage <= 40  ? '#fdae6b':
-            religionPercentage > 40 && religionPercentage <= 50  ? '#fd8d3c':
-            religionPercentage > 50 && religionPercentage <= 60  ? '#f16913':
-            religionPercentage > 60 && religionPercentage <= 70  ? '#d94801':
-            religionPercentage > 70 && religionPercentage <= 80  ? '#a63603':
-            religionPercentage > 80 && religionPercentage <= 90  ? '#7f2704':
-                                                                    '#654321'; // dark brown
-    }
-
-    // Styling for the area of each state
-    function RegionOutline(feature) {
-      return {
-        fillColor: getColor(feature.properties.Very_Important),
-        weight: 2,
-        opacity: 1,
-        color: 'white',
-        dashArray: '3',
-        fillOpacity: 0.7
       };
-    }
 
-    // highlight border when mouseover
-    function highlightFeature(e) {
-      var layer = e.target;
 
-      layer.setStyle({
+      // Get the colour for the map based on the religion data %
+      function getColor(religionPercentage) {
+        return religionPercentage > 90 ? '#bb151a' :
+          religionPercentage > 80 ? '#d92723' :
+            religionPercentage > 70 ? '#ef4533' :
+              religionPercentage > 60 ? '#f9694c' :
+                religionPercentage > 50 ? '#fc8a6b' :
+                  religionPercentage > 40 ? '#4b97c9' :
+                    religionPercentage > 30 ? '#2f7ebc' :
+                      religionPercentage > 20 ? '#1864aa' :
+                        religionPercentage > 10 ? '#0a4a90' :
+                          '#08306b';
+      }
+
+      // Styling for the area of each state
+      function RegionOutline(feature) {
+        return {
+          fillColor: getColor(feature.properties.religion),
+          weight: 2,
+          opacity: 1,
+          color: 'white',
+          dashArray: '3',
+          fillOpacity: 0.7
+        };
+      }
+
+      // Highlight border when mouseover
+      function highlightFeature(e) {
+        var layer = e.target || e;
+
+        layer.setStyle({
           weight: 5,
           color: '#666',
           dashArray: '',
           fillOpacity: 0.7
-      });
+        });
 
-      if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
           layer.bringToFront();
+        }
+
+        info.update(layer.feature.properties);
+
+        if (map_2_active == true) {
+          info_2.update(layer.feature.properties);
+        }
       }
 
-      info.update(layer.feature.properties); // change to the religion info
-    }
+      // Reset the border highlight when mouseout
+      function resetHighlight(e) {
+        geojson.resetStyle(e.target);
 
-    // reset the border highlight when mouseout
-    function resetHighlight(e) {
-      geojson.resetStyle(e.target);
-      
-      info.update();
-    }
+        info.update();
 
-    // zoom to the states
-    function zoomToFeature(e) {
-      map.fitBounds(e.target.getBounds());
-    }
+        if (map_2_active == true) {
+          geojson_2.resetStyle(e.target);
+          info_2.update();
+        }
+      }
 
-    function onEachFeature(feature, layer) {
-      layer.on({
+      // Zoom to the states/countries
+      function zoomToFeature(e) {
+        map.fitBounds(e.target.getBounds());
+
+        if (map_2_active == true) {
+          map_2.fitBounds(e.target.getBounds());
+        }
+      }
+
+      function onEachFeature(feature, layer) {
+        layer.on({
           mouseover: highlightFeature,
           mouseout: resetHighlight,
           click: zoomToFeature
-      });
-    }
+        });
+      }
 
-    // custome control function to display the info (tooltip) 
-    info.onAdd = function (map) {
-      this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
-      this.update();
-      return this._div;
-    };
+      // Custom control function to display the info (tooltip) 
+      info.onAdd = function (map) {
+        this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+        this.update();
+        return this._div;
+      };
 
-    // method that we will use to update the control based on feature properties passed
-    info.update = function (props) {
+      // Method that we will use to update the control based on feature properties passed
+      info.update = function (props) {
         this._div.innerHTML = (props ?
-        '<h5><b>' + props.name + '</b></h5>': "") +  (props ?
-            'Religious Population: ' + props.Very_Important + '%' + '</br>' + 'Population: ' + props.Population
-            : 'Hover over a state');
-    };
+          '<h5><b>' + props.name + '</b></h5>' : "") + (props ?
+            'Religious Population: ' + props.religion + '%' + '</br>' + 'Population: ' + props.population
+            : 'Hover over a state/country');
+      };
 
-    info.addTo(map);
+      info.addTo(map); // Init info
 
-  });
-  
+      // Add legend function with interactive highlight
+      legend.onAdd = function (map) {
+        var div = L.DomUtil.create('div', 'info legend'),
+          percent = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90],
+          from, to, span, color, text;
+
+        for (var i = 0; i < percent.length; i++) {
+          from = percent[i];
+          to = percent[i + 1];
+
+          span = document.createElement("span");
+          span.classList.add("legendItem");
+          span.dataset.from = from;
+          span.dataset.to = to;
+
+          color = document.createElement("i");
+          color.style.background = getColor(from + 1);
+
+          text = document.createTextNode(from + (to ? '% – ' + to + '%' : '%+'));
+
+          span.appendChild(color);
+          span.appendChild(text);
+
+          span.addEventListener("mouseover", function (event) {
+            var span = event.currentTarget,
+              from = span.dataset.from,
+              to = span.dataset.to,
+              above = to === "undefined";
+
+            geojson.eachLayer(function (layer) {
+              var religion = parseInt(layer.feature.properties.religion);
+              if (religion >= from && (above || religion < to)) {
+                highlightFeature(layer);
+              }
+            });
+          });
+          span.addEventListener("mouseout", function () {
+            geojson.eachLayer(resetHighlight);
+          });
+
+          div.appendChild(span);
+          div.appendChild(document.createElement("br"));
+        }
+
+        return div;
+      };
+
+      legend.addTo(map); // Init legend
+
+      // Info and legend functions for map_2
+      info_2.onAdd = function (map_2) {
+        this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+        this.update();
+        return this._div;
+      };
+
+      info_2.update = function (props) {
+        this._div.innerHTML = (props ?
+          '<h5><b>' + props.name + '</b></h5>' : "") + (props ?
+            'Religious Population: ' + props.religion + '%' + '</br>' + 'Population: ' + props.population
+            : 'Hover over a state/country');
+      };
+
+      legend_2.onAdd = function (map_2) {
+
+        var div = L.DomUtil.create('div', 'info legend'),
+          percent = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+
+        // loop through our density intervals and generate a label with a colored square for each interval
+        for (var i = 0; i < percent.length; i++) {
+          div.innerHTML +=
+            '<i class="legend-percent" style="background:' + getColor(percent[i] + 1) + '"></i> ' +
+            percent[i] + (percent[i + 1] ? '% &ndash; ' + percent[i + 1] + '%<br>' : '%+');
+        }
+
+        return div;
+      };
+
+      legend_2.onAdd = function (map_2) {
+        var div = L.DomUtil.create('div', 'info legend'),
+          percent = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90],
+          from, to, span, color, text;
+
+        for (var i = 0; i < percent.length; i++) {
+          from = percent[i];
+          to = percent[i + 1];
+
+          span = document.createElement("span");
+          span.classList.add("legendItem");
+          span.dataset.from = from;
+          span.dataset.to = to;
+
+          color = document.createElement("i");
+          color.style.background = getColor(from + 1);
+
+          text = document.createTextNode(from + (to ? '% – ' + to + '%' : '%+'));
+
+          span.appendChild(color);
+          span.appendChild(text);
+
+          span.addEventListener("mouseover", function (event) {
+            var span = event.currentTarget,
+              from = span.dataset.from,
+              to = span.dataset.to,
+              above = to === "undefined";
+
+            geojson_2.eachLayer(function (layer) {
+              var religion = parseInt(layer.feature.properties.religion);
+              if (religion >= from && (above || religion < to)) {
+                highlightFeature(layer);
+              }
+            });
+          });
+          span.addEventListener("mouseout", function () {
+            geojson.eachLayer(resetHighlight);
+          });
+
+          div.appendChild(span);
+          div.appendChild(document.createElement("br"));
+        }
+
+        return div;
+      };
+    });
+
   </script>
 </body>
 
