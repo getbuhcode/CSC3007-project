@@ -87,9 +87,26 @@
 
   Promise.all([d3.csv("ReligionData/US_Religion_Data.csv"), d3.csv("ReligionData/US_Population_Data.csv")]).then(data => {
 
-    console.log(data[0]['Very important']); // US_Religion_Data 
+    console.log(data[0]); // US_Religion_Data 
     console.log(data[1]); // US_Population_Data
 
+    console.log(statesData.features.length)
+    console.log(data[0][0])
+
+    // add the very_important percentage into statesData
+    for (i in data[0]){
+        var stateName = data[0][i]['State']
+        for (i in statesData.features){
+          var name = statesData.features[i]['properties'].name
+          if (name == stateName){
+            var veryImpt = data[0][i].Very_Important  
+            veryImpt = parseInt(veryImpt)
+            statesData.features[i]['properties']['Very_Important'] = veryImpt 
+          }
+        }
+    }
+
+    console.log(statesData)
     // define geojson variable
     var geojson;
     var info = L.control();
@@ -106,26 +123,26 @@
     // Get the colour for the map based on the religion data %
     function getColor(religionPercentage) {
       return religionPercentage <= 10 ? '#fff5eb':
-            religionPercentage > 10 && religionPercentage <= 20  ? '#fff5eb':
-            religionPercentage > 20 && religionPercentage <= 30  ? '#fff5eb':
-            religionPercentage > 30 && religionPercentage <= 40  ? '#fff5eb':
-            religionPercentage > 40 && religionPercentage <= 50  ? '#fff5eb':
-            religionPercentage > 50 && religionPercentage <= 60  ? '#fff5eb':
-            religionPercentage > 60 && religionPercentage <= 70  ? '#fff5eb':
-            religionPercentage > 70 && religionPercentage <= 80  ? '#fff5eb':
-            religionPercentage > 80 && religionPercentage <= 90  ? '#fff5eb':
+            religionPercentage > 10 && religionPercentage <= 20  ? '#fee6ce':
+            religionPercentage > 20 && religionPercentage <= 30  ? '#fdd0a2':
+            religionPercentage > 30 && religionPercentage <= 40  ? '#fdae6b':
+            religionPercentage > 40 && religionPercentage <= 50  ? '#fd8d3c':
+            religionPercentage > 50 && religionPercentage <= 60  ? '#f16913':
+            religionPercentage > 60 && religionPercentage <= 70  ? '#d94801':
+            religionPercentage > 70 && religionPercentage <= 80  ? '#a63603':
+            religionPercentage > 80 && religionPercentage <= 90  ? '#7f2704':
                                                                     '#654321'; // dark brown
     }
 
     // Styling for the area of each state
     function RegionOutline(feature) {
       return {
-          fillColor: getColor(data[0]['Very important']), // change the 20 to the religionPrecentage
-          weight: 2,
-          opacity: 1,
-          color: 'white',
-          dashArray: '3',
-          fillOpacity: 0.7
+        fillColor: getColor(feature.properties.Very_Important),
+        weight: 2,
+        opacity: 1,
+        color: 'white',
+        dashArray: '3',
+        fillOpacity: 0.7
       };
     }
 
@@ -176,8 +193,9 @@
 
     // method that we will use to update the control based on feature properties passed
     info.update = function (props) {
-        this._div.innerHTML = '<h4>Percentage of US people who think religion is important</h4>' +  (props ?
-            '<b>' + props.name + '</b><br />' + props.density + ' people / mi<sup>2</sup>'
+        this._div.innerHTML = (props ?
+        '<h5><b>' + props.name + '</b></h5>': "") +  (props ?
+            'Religious Population: ' + props.Very_Important + '%'
             : 'Hover over a state');
     };
 
