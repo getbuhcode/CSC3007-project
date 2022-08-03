@@ -28,6 +28,20 @@
       margin-left: auto;
       margin-right: auto;
     }
+
+    .info {
+      padding: 6px 8px;
+      font: 14px/16px Arial, Helvetica, sans-serif;
+      background: white;
+      background: rgba(255,255,255,0.8);
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      border-radius: 5px;
+    }
+    
+    .info h4 {
+      margin: 0 0 5px;
+      color: #777;
+    }
   </style>
 </head>
 
@@ -70,6 +84,11 @@
 
   <!-- Main Script -->
   <script type="text/javascript">
+
+    // define geojson variable
+    var geojson;
+    var info = L.control();
+
     // Map tiles
     let tiles = new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
 
@@ -77,14 +96,88 @@
     let map = new L.Map('map', { center: [41.0395, -99.1728], zoom: 4 }).addLayer(tiles)
 
     // Add USA state data
-    L.geoJson(statesData).addTo(map);
+    geojson = L.geoJson(statesData, {style: RegionOutline, onEachFeature: onEachFeature}).addTo(map);
 
-    var US_GeoJSONPath = 'GeoData/Europe_geo_data.json';
+    // Get the colour for the map based on the religion data %
+    function getColor(religionPercentage) {
+      return religionPercentage <= 10 ? '#fff5eb':
+             religionPercentage > 10 && religionPercentage <= 20  ? '#fff5eb':
+             religionPercentage > 20 && religionPercentage <= 30  ? '#fff5eb':
+             religionPercentage > 30 && religionPercentage <= 40  ? '#fff5eb':
+             religionPercentage > 40 && religionPercentage <= 50  ? '#fff5eb':
+             religionPercentage > 50 && religionPercentage <= 60  ? '#fff5eb':
+             religionPercentage > 60 && religionPercentage <= 70  ? '#fff5eb':
+             religionPercentage > 70 && religionPercentage <= 80  ? '#fff5eb':
+             religionPercentage > 80 && religionPercentage <= 90  ? '#fff5eb':
+                                                                    '#654321'; // dark brown
+    }
 
-    $.getJSON(US_GeoJSONPath, function(data) {
-        console.log("Europe_geo_data.json", data);
-    });
-    
+    // Styling for the border of each country
+    function RegionOutline(feature) {
+      return {
+          fillColor: getColor(20), // change the 20 to the religionPrecentage
+          weight: 2,
+          opacity: 1,
+          color: 'white',
+          dashArray: '3',
+          fillOpacity: 0.7
+      };
+    }
+
+    // highlight border when mouseover
+    function highlightFeature(e) {
+      var layer = e.target;
+
+      layer.setStyle({
+          weight: 5,
+          color: '#666',
+          dashArray: '',
+          fillOpacity: 0.7
+      });
+
+      if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+          layer.bringToFront();
+      }
+
+      info.update(layer.feature.properties); // change to the religion info
+    }
+
+    // reset the border highlight when mouseout
+    function resetHighlight(e) {
+      geojson.resetStyle(e.target);
+      
+      info.update();
+    }
+
+    // zoom to the states
+    function zoomToFeature(e) {
+      map.fitBounds(e.target.getBounds());
+    }
+
+    function onEachFeature(feature, layer) {
+      layer.on({
+          mouseover: highlightFeature,
+          mouseout: resetHighlight,
+          click: zoomToFeature
+      });
+    }
+
+    // custome control function to display the info (tooltip) 
+    info.onAdd = function (map) {
+      this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+      this.update();
+      return this._div;
+    };
+
+    // method that we will use to update the control based on feature properties passed
+    info.update = function (props) {
+        this._div.innerHTML = '<h4>Percentage of US people who think religion is important</h4>' +  (props ?
+            '<b>' + props.name + '</b><br />' + props.density + ' people / mi<sup>2</sup>'
+            : 'Hover over a state');
+    };
+
+    info.addTo(map);
+
   </script>
 </body>
 
