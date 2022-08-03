@@ -106,6 +106,18 @@
         }
     }
 
+    // add the population into statesData
+    for (i in data[1]){
+        var stateName = data[1][i]['State']
+        for (i in statesData.features){
+          var name = statesData.features[i]['properties'].name
+          if (name == stateName){
+            var population = data[1][i].Population  
+            statesData.features[i]['properties']['Population'] = population 
+          }
+        }
+    }
+
     console.log(statesData)
     // define geojson variable
     var geojson;
@@ -195,7 +207,7 @@
     info.update = function (props) {
         this._div.innerHTML = (props ?
         '<h5><b>' + props.name + '</b></h5>': "") +  (props ?
-            'Religious Population: ' + props.Very_Important + '%'
+            'Religious Population: ' + props.Very_Important + '%' + '</br>' + 'Population: ' + props.Population
             : 'Hover over a state');
     };
 
