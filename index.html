@@ -64,8 +64,9 @@
     crossorigin="anonymous"></script>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.8.0/leaflet.js"></script>
+  <script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
 
-  <script type="text/javascript" src="us-states.js"></script>
+  <script type="text/javascript" src="GeoData/us-states.js"></script>
 
   <!-- Main Script -->
   <script type="text/javascript">
@@ -77,6 +78,13 @@
 
     // Add USA state data
     L.geoJson(statesData).addTo(map);
+
+    var US_GeoJSONPath = 'GeoData/Europe_geo_data.json';
+
+    $.getJSON(US_GeoJSONPath, function(data) {
+        console.log("Europe_geo_data.json", data);
+    });
+    
   </script>
 </body>
 
