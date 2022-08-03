@@ -1,216 +1,515 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="" />
-    <title>CSC3007 Milestone 2</title>
 
-    <!-- Bootstrap CSS -->
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-      integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor"
-      crossorigin="anonymous"
-    />
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="" />
+  <title>USA/EU Religion Distribution</title>
 
-    <!-- Custom CSS -->
-    <style>
-      .container {
-        max-width: 1000px;
+  <!-- CSS CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-0evHe/X+R7YkIZDRvuzKMRqM+OrBnVFBL6DOitfPri4tjfHxaWutUpFmBp4vmVor" crossorigin="anonymous" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.8.0/leaflet.css" />
+
+  <!-- Custom CSS -->
+  <style>
+    .container {
+      max-width: 1200px;
+    }
+
+    .header {
+      max-width: 600px;
+    }
+
+    #map,
+    #map2 {
+      width: 1000px;
+      height: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .info {
+      padding: 6px 8px;
+      font: 14px/16px Arial, Helvetica, sans-serif;
+      background: white;
+      background: rgba(255, 255, 255, 0.8);
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+      border-radius: 5px;
+    }
+
+    .info h4 {
+      margin: 0 0 5px;
+      color: #777;
+    }
+
+    .legend {
+      line-height: 18px;
+      color: #555;
+    }
+
+    .legend i {
+      width: 18px;
+      height: 18px;
+      float: left;
+      margin-right: 8px;
+      opacity: 0.7;
+    }
+
+    .topnav {
+      overflow: hidden;
+      background-color: rgb(107, 105, 105);
+    }
+
+    .topnav a {
+      float: left;
+      color: #f2f2f2;
+      text-align: center;
+      padding: 14px 16px;
+      text-decoration: none;
+      font-size: 17px;
+    }
+
+    .topnav a:hover {
+      background-color: #ddd;
+      color: rgb(94, 91, 91);
+    }
+
+    .topnav a.active {
+      background-color: #b98f3b;
+      color: white;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="topnav" id="myTopnav">
+    <a href="index.html">Milestone1</a>
+    <a href="milestone_2.html" class="active">Milestone2</a>
+    <a href="milestone_2_doc.html">Milestone2_document</a>
+  </div>
+
+  <div class="container py-3">
+    <header>
+      <div class="header p-3 pb-md-4 mx-auto text-center">
+        <h1 class="display-4 fw-normal">Religion Distribution</h1>
+        <p class="fs-5 text-muted">Find out which country or states has the highest religious population!</p>
+      </div>
+    </header>
+
+    <main>
+      <div class="d-flex justify-content-center">
+        <div class="btn-group btn-group-lg" role="group">
+          <input type="radio" class="btn-check" name="btnradio" id="btnradio1" value="USA" autocomplete="off" checked />
+          <label class="btn btn-secondary" for="btnradio1">USA</label>
+
+          <input type="radio" class="btn-check" name="btnradio" id="btnradio2" value="EU" autocomplete="off" />
+          <label class="btn btn-secondary" for="btnradio2">EU</label>
+
+          <input type="radio" class="btn-check" name="btnradio" id="btnradio3" value="Both" autocomplete="off" />
+          <label class="btn btn-secondary" for="btnradio3">USA & EU</label>
+        </div>
+      </div>
+
+      <div id="map_header" class="d-flex justify-content-around mt-2">
+        <h1>United States</h1>
+        <h1>European Union</h1>
+      </div>
+
+      <div class="d-flex">
+        <div id="map" class="mt-5"></div>
+        <div id="map2" class="mt-5 ms-5"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Required JS files -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.min.js"
+    integrity="sha384-kjU+l4N0Yf4ZOJErLsIcvOU2qSb74wXpOhqTvwVx3OElZRweTnQ6d31fXEoRD1Jy"
+    crossorigin="anonymous"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.8.0/leaflet.js"></script>
+  <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+
+  <script type="text/javascript" src="GeoData/us-states.js"></script>
+  <script type="text/javascript" src="GeoData/Europe_geo_data.js"></script>
+
+  <!-- Main Script -->
+  <script type="text/javascript">
+
+    Promise.all([d3.csv("ReligionData/US_Religion_Data.csv"), d3.csv("ReligionData/US_Population_Data.csv"), d3.csv("ReligionData/EU_Religion_Data.csv"), d3.csv("ReligionData/EU_Population_Data.csv")]).then(data => {
+
+      // Add religion & pop for US states
+      statesData.features.forEach(function (feature) {
+        data[0].forEach(function (state) {
+          if (feature.properties.name == state.State) {
+            feature.properties.religion = state.Very_Important
+          }
+        })
+
+        data[1].forEach(function (state) {
+          if (feature.properties.name == state.State) {
+            feature.properties.population = state.Population
+          }
+        })
+      })
+
+      // Add religion & pop for EU countries
+      euCountries.features.forEach(function (feature) {
+        data[2].forEach(function (country) {
+          if (feature.properties.name == country.Country) {
+            feature.properties.religion = country.Religion
+          }
+        })
+
+        data[3].forEach(function (country) {
+          if (feature.properties.name == country.Country) {
+            feature.properties.population = country.Population
+          }
+        })
+      })
+
+      // Hide divs for Both
+      $("#map_header").attr("class", "d-flex justify-content-around mt-2 d-none");
+      $("#map2").attr("class", "mt-5 ms-5 d-none");
+
+      // Define global variables
+      var geojson;
+      var geojson_2;
+      var map;
+      var map_2;
+      var info = L.control();
+      var info_2 = L.control();
+      var legend = L.control({ position: 'bottomright' });
+      var legend_2 = L.control({ position: 'bottomright' });
+      var map_2_active = false; // Used to active map_2 features
+
+      // Init USA map
+      // Map tiles
+      let tiles = new L.TileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}');
+
+      // Map
+      map = new L.Map('map', { center: [41.0395, -99.1728], zoom: 4 }).addLayer(tiles)
+
+      // Add USA state data
+      geojson = L.geoJson(statesData, { style: RegionOutline, onEachFeature: onEachFeature }).addTo(map);
+
+      // Add an event listener to the radio buttons
+      d3.selectAll('input').on('change', function () {
+        changeMap(this.value)
+      })
+
+      // Remove old map and add in new map
+      function changeMap(buttonValue) {
+        // Remove prev map
+        map.off();
+        map.remove();
+
+        if (map_2_active == true) {
+          map_2.off();
+          map_2.remove();
+          map_2_active = false
+
+          // Hide divs for Both
+          $("#map_header").attr("class", "d-flex justify-content-around mt-2 d-none");
+          $("#map2").attr("class", "mt-5 ms-5 d-none");
+        }
+
+        if (buttonValue == "USA") {
+          /// Add USA country map and data
+
+          map = new L.Map('map', { center: [41.0395, -99.1728], zoom: 4 }).addLayer(tiles)
+          geojson = L.geoJson(statesData, { style: RegionOutline, onEachFeature: onEachFeature }).addTo(map);
+        } else if (buttonValue == "EU") {
+          // Add EU country map and data
+
+          map = new L.Map('map', { center: [50.7043, 22.5906], zoom: 4 }).addLayer(tiles)
+          geojson = L.geoJson(euCountries, { style: RegionOutline, onEachFeature: onEachFeature }).addTo(map);
+        } else if (buttonValue == "Both") {
+          bothMap()
+        }
+
+        // Add legend and infobox for the new maps
+        legend.addTo(map);
+        info.addTo(map);
+
+        if (map_2_active == true) {
+          legend_2.addTo(map_2);
+          info_2.addTo(map_2);
+        }
       }
 
-      .header {
-        max-width: 700px;
+      // Set view to 2 maps
+      function bothMap() {
+        // Show divs and activate map_2
+        $("#map_header").removeClass("d-none");
+        $("#map2").removeClass("d-none");
+        map_2_active = true
+        
+        /**
+         * Create the leaflet map for US
+        */
+        // Map tiles for US
+        // For Lat and Long: https://www.latlong.net/
+        let tiles_US = new L.TileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}');
+        // Map for  US
+        map = new L.Map('map', {
+          center: [50.0395, -99.1728],
+          zoom: 3,
+          minZoom: 2.4,
+          maxZoom: 5,
+          maxBounds: L.latLngBounds(
+            L.latLng(17.480625, -64.563013),
+            L.latLng(56.277523, -196.739525),
+
+          ),
+        }).addLayer(tiles_US)
+        // Add USA state data
+        geojson = L.geoJson(statesData, { style: RegionOutline, onEachFeature: onEachFeature }).addTo(map);
+
+        /**
+         * Create the leaflet map for EU
+        */
+        // Map tiles for EU
+        let tiles_EU = new L.TileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}');
+        // Map for  EU
+        map_2 = new L.Map('map2', {
+          center: [50.7043, 22.5906],
+          zoom: 3,
+          minZoom: 2.4,
+          maxZoom: 5,
+          maxBounds: L.latLngBounds(
+            L.latLng(50.491061, -13.137016),
+            L.latLng(66.443100, 180.843980)
+          ),
+        }).addLayer(tiles_EU)
+        // Add USA state data
+        geojson_2 = L.geoJson(euCountries, { style: RegionOutline, onEachFeature: onEachFeature }).addTo(map_2);
+
+      };
+
+
+      // Get the colour for the map based on the religion data %
+      function getColor(religionPercentage) {
+        return religionPercentage > 90 ? '#bb151a' :
+          religionPercentage > 80 ? '#d92723' :
+            religionPercentage > 70 ? '#ef4533' :
+              religionPercentage > 60 ? '#f9694c' :
+                religionPercentage > 50 ? '#fc8a6b' :
+                  religionPercentage > 40 ? '#4b97c9' :
+                    religionPercentage > 30 ? '#2f7ebc' :
+                      religionPercentage > 20 ? '#1864aa' :
+                        religionPercentage > 10 ? '#0a4a90' :
+                          '#08306b';
       }
-      #img_icon {
-        height: 200px;
+
+      // Styling for the area of each state
+      function RegionOutline(feature) {
+        return {
+          fillColor: getColor(feature.properties.religion),
+          weight: 2,
+          opacity: 1,
+          color: 'white',
+          dashArray: '3',
+          fillOpacity: 0.7
+        };
       }
-    </style>
-  </head>
 
-  <body>
-    <div class="container py-3">
-      <header>
-        <div class="header p-3 pb-md-4 mx-auto text-center">
-          <h1 class="display-6 fw-normal">CSC3007 Information Visualisation</h1>
-          <p class="fs-2 fw-normal text-muted">Milestone 2 Documentation</p>
-        </div>
-      </header>
+      // Highlight border when mouseover
+      function highlightFeature(e) {
+        var layer = e.target || e;
 
-      <main>
-        <div class="alert alert-secondary mb-4" role="alert">
-          To view the presentation slides for Milestone 2, please click
-          <a
-            href="https://github.com/getbuhcode/CSC3007-project/tree/main/Milestone%20PPT"
-            class="alert-link"
-            >here</a
-          >.
-        </div>
+        layer.setStyle({
+          weight: 5,
+          color: '#666',
+          dashArray: '',
+          fillOpacity: 0.7
+        });
 
-        <div class="accordion">          
-          <div class="accordion-item">
-            <h2 class="accordion-header" id="vis2">
-              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#vis2-collapse" aria-expanded="false" aria-controls="vis2-collapse">
-                <span class="h4">Milestone 2</span>
-              </button>
-            </h2>
-            <div id="vis2-collapse" class="accordion-collapse collapse" aria-labelledby="vis2">
-              <div class="accordion-body">
-                <div class="mb-4" style="max-width: 800px">
-                  <p>
-                    Our chosen visualization to improved upon for Milestone 2.
-                  </p>
+        if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+          layer.bringToFront();
+        }
 
-                  <img class="img-fluid" src="https://i.redd.it/83vq4th4vj691.png" />
-                  <p class="text-muted">
-                    Source:
-                    <a
-                      href="https://www.reddit.com/r/dataisbeautiful/comments/vfrqow/percent_of_people_who_responded_that_religion_is/"
-                      >reddit.com/r/dataisbeautiful/comments/vfrqow/percent_of_people_who_responded_that_religion_is</a
-                    >
-                  </p>
-                </div>
+        info.update(layer.feature.properties);
 
-                <p class="h4 text-dark">Data (What):</p>
-                <ul>
-                  <li>
-                    Our dataset consist of the Population for EU and US, and the Religion Importance % for the US states and EU countries.
-                  </li>
-                  <li>
-                    Quantitative data: Population and religion importance % 
-                  </li>
-                  <li>
-                    Qualitative data: States/Countries
-                  </li>
-                </ul>
+        if (map_2_active == true) {
+          info_2.update(layer.feature.properties);
+        }
+      }
 
-                <p class="h4 text-dark">Task (Why):</p>
-                <ul>
-                  <li>
-                    The visualization is to show the importance of religion for each state/countries of the US or EU to allow users to analyze in 
-                    which state/countries where the population consider religion to be of importance or not important. 
-                  </li>
-                </ul>
-            
-                <p class="h4 text-dark">Idiom (How):</p>
-                <ul>
-                  <li>
-                    The idiom is a choropleth map. The first tab is the map showing the different states in the United States (US). 
-                    The second tab is the map showing the different countries in the European Union (EU). 
-                    The third tab has both the US and EU maps side-by-side, for comparison of the data.
-                  </li>
-                  <ul>
-                    <li>
-                      0% - 50%: Dark Blue - Light blue
-                    </li>
-                    <li>
-                      50% - 100%: Light Red - Dark red
-                    </li>
-                  </ul>
-                  <br>
-                  <img
-                    class="img-fluid"
-                    src="imgs/milestone2_1.jpg"
-                  />
-                  <img
-                    class="img-fluid"
-                    src="imgs/milestone2_2.jpg"
-                  />
-                  <li>
-                    Using a default light to dark gradient does not helps the user to visualize the difference well as the light gradient 
-                    blend into the leaflet map making it difficult to see. Hence, using dark colour for both end of the range spectrum 
-                    helps to visualize the difference more distinctly. 
-                  </li>
-                </ul>
-            
-                <p class="h4 text-dark">Design Principle: </p>
-                <ul>
-                  <li>Brief Overview:</li>
-                  <ul>
-                    <li>Gradient of colour in the map shows the states/countries with lower/higher religious population</li>
-                  </ul>
-                  <li>Zoom:</li>
-                  <ul>
-                    <li>Zoom in/out for more details on the states/countries</li>
-                  </ul>
-                  <li>Legend:</li>
-                  <ul>
-                    <li>Distinguish between high/low importance of religion</li>
-                  </ul>
-                  <li>Tooltip:</li>
-                  <ul>
-                    <li>Display additional information on mouse hover</li>
-                  </ul>                
-                </ul>
+      // Reset the border highlight when mouseout
+      function resetHighlight(e) {
+        geojson.resetStyle(e.target);
 
-                <p class="h4 text-dark">Pitfalls: </p>
-                <ul>
-                  <li>Dataset is of different years where US is 2014 and EU is 2018</li>
-                  <li>EU Dataset for importance of religion does not contain sample size count</li>
-                  <li>Initially, tried SVG for the comparison of both map but decided that Leaflet is more consistent in visualization flow.</li>
-                </ul>
+        info.update();
 
-                <p class="h4 text-dark">Technologies used: </p>
-                <img
-                  class="img-thumbnail" id="img_icon"
-                  src="imgs/bootstrap_icon.png"
-                />
-                <img
-                  class="img-thumbnail" id="img_icon"
-                  src="imgs/d3_icon.png"
-                />
-                <img
-                  class="img-thumbnail" id="img_icon"
-                  src="imgs/JQuery_logo-512.png"
-                />
-                <img
-                  class="img-thumbnail" id="img_icon"
-                  src="imgs/leaflet_icon.png"
-                />
+        if (map_2_active == true) {
+          geojson_2.resetStyle(e.target);
+          info_2.update();
+        }
+      }
 
-                
+      // Zoom to the states/countries
+      function zoomToFeature(e) {
+        map.fitBounds(e.target.getBounds());
 
-                <p class="h4 text-dark"><br/>Work Contribution: </p>
-                <ul>
-                  <li>Wong Yao Hui</li>
-                  <ul>
-                    <li>Data Preprocessing</li>
-                    <li>Leaflet template map for US, EU</li>
-                    <li>SVG Map (Not implemented)</li>
-                    <li>Integration</li>
-                    <li>Presentation/Documentation</li>
-                  </ul>
-                  <li>Ng Jing Kiat</li>
-                  <ul>
-                    <li>Data Preprocessing</li>
-                    <li>Leaflet choropleth map</li>
-                    <li>Leaflet Legend + highlight</li>
-                    <li>Integration</li>
-                    <li>Presentation/Documentation</li>
-                  </ul>
-                  <li>Marsius</li>
-                  <ul>
-                    <li>Data Preprocessing</li>
-                    <li>Leaflet Tooltip</li>
-                    <li>Integration</li>
-                    <li>Presentation/Documentation</li>
-                  </ul>
-                </ul>
+        if (map_2_active == true) {
+          map_2.fitBounds(e.target.getBounds());
+        }
+      }
 
-                <p class="h4 text-dark">Future Work: </p>
-                <ul>
-                  <li>Resolve tooltip bug that display twice during hover on US & EU map</li>
-                </ul>
+      function onEachFeature(feature, layer) {
+        layer.on({
+          mouseover: highlightFeature,
+          mouseout: resetHighlight,
+          click: zoomToFeature
+        });
+      }
 
-              </div>
-            </div>
-          </div>
-          </div>
-        </div>
-      </main>
-    </div>
-  </body>
+      // Custom control function to display the info (tooltip) 
+      info.onAdd = function (map) {
+        this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+        this.update();
+        return this._div;
+      };
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+      // Method that we will use to update the control based on feature properties passed
+      info.update = function (props) {
+        this._div.innerHTML = (props ?
+          '<h5><b>' + props.name + '</b></h5>' : "") + (props ?
+            'Religious Population: ' + props.religion + '%' + '</br>' + 'Population: ' + props.population
+            : 'Hover over a state/country');
+      };
+
+      info.addTo(map); // Init info
+
+      // Add legend function with interactive highlight
+      legend.onAdd = function (map) {
+        var div = L.DomUtil.create('div', 'info legend'),
+          percent = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90],
+          from, to, span, color, text;
+
+        for (var i = 0; i < percent.length; i++) {
+          from = percent[i];
+          to = percent[i + 1];
+
+          span = document.createElement("span");
+          span.classList.add("legendItem");
+          span.dataset.from = from;
+          span.dataset.to = to;
+
+          color = document.createElement("i");
+          color.style.background = getColor(from + 1);
+
+          text = document.createTextNode(from + (to ? '% – ' + to + '%' : '%+'));
+
+          span.appendChild(color);
+          span.appendChild(text);
+
+          span.addEventListener("mouseover", function (event) {
+            var span = event.currentTarget,
+              from = span.dataset.from,
+              to = span.dataset.to,
+              above = to === "undefined";
+
+            geojson.eachLayer(function (layer) {
+              var religion = parseInt(layer.feature.properties.religion);
+              if (religion >= from && (above || religion < to)) {
+                highlightFeature(layer);
+              }
+            });
+          });
+          span.addEventListener("mouseout", function () {
+            geojson.eachLayer(resetHighlight);
+          });
+
+          div.appendChild(span);
+          div.appendChild(document.createElement("br"));
+        }
+
+        return div;
+      };
+
+      legend.addTo(map); // Init legend
+
+      // Info and legend functions for map_2
+      info_2.onAdd = function (map_2) {
+        this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+        this.update();
+        return this._div;
+      };
+
+      info_2.update = function (props) {
+        this._div.innerHTML = (props ?
+          '<h5><b>' + props.name + '</b></h5>' : "") + (props ?
+            'Religious Population: ' + props.religion + '%' + '</br>' + 'Population: ' + props.population
+            : 'Hover over a state/country');
+      };
+
+      legend_2.onAdd = function (map_2) {
+
+        var div = L.DomUtil.create('div', 'info legend'),
+          percent = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]
+
+        // loop through our density intervals and generate a label with a colored square for each interval
+        for (var i = 0; i < percent.length; i++) {
+          div.innerHTML +=
+            '<i class="legend-percent" style="background:' + getColor(percent[i] + 1) + '"></i> ' +
+            percent[i] + (percent[i + 1] ? '% &ndash; ' + percent[i + 1] + '%<br>' : '%+');
+        }
+
+        return div;
+      };
+
+      legend_2.onAdd = function (map_2) {
+        var div = L.DomUtil.create('div', 'info legend'),
+          percent = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90],
+          from, to, span, color, text;
+
+        for (var i = 0; i < percent.length; i++) {
+          from = percent[i];
+          to = percent[i + 1];
+
+          span = document.createElement("span");
+          span.classList.add("legendItem");
+          span.dataset.from = from;
+          span.dataset.to = to;
+
+          color = document.createElement("i");
+          color.style.background = getColor(from + 1);
+
+          text = document.createTextNode(from + (to ? '% – ' + to + '%' : '%+'));
+
+          span.appendChild(color);
+          span.appendChild(text);
+
+          span.addEventListener("mouseover", function (event) {
+            var span = event.currentTarget,
+              from = span.dataset.from,
+              to = span.dataset.to,
+              above = to === "undefined";
+
+            geojson_2.eachLayer(function (layer) {
+              var religion = parseInt(layer.feature.properties.religion);
+              if (religion >= from && (above || religion < to)) {
+                highlightFeature(layer);
+              }
+            });
+          });
+          span.addEventListener("mouseout", function () {
+            geojson.eachLayer(resetHighlight);
+          });
+
+          div.appendChild(span);
+          div.appendChild(document.createElement("br"));
+        }
+
+        return div;
+      };
+    });
+
+  </script>
+</body>
+
 </html>
